@@ -16,7 +16,8 @@ from pysc2.env import sc2_env
 from pysc2.lib import stopwatch
 import tensorflow as tf
 
-from pysc2.env.run_loop import run_loop
+"""from pysc2.env.run_loop import run_loop"""
+from run_loop import run_loop
 
 COUNTER = 0
 LOCK = threading.Lock()
