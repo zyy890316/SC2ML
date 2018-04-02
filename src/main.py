@@ -38,7 +38,7 @@ flags.DEFINE_integer("screen_resolution", 64, "Resolution for screen feature lay
 flags.DEFINE_integer("minimap_resolution", 64, "Resolution for minimap feature layers.")
 flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")
 
-flags.DEFINE_string("agent", "agents.moveToBeaconAgent.MyMoveToBeacon", "Which agent to run.")
+flags.DEFINE_string("agent", "agents.a3c_agent.A3CAgent", "Which agent to run.")
 flags.DEFINE_string("net", "fcn", "atari or fcn.")
 flags.DEFINE_enum("agent_race", None, sc2_env.races.keys(), "Agent's race.")
 flags.DEFINE_enum("bot_race", None, sc2_env.races.keys(), "Bot's race.")
@@ -120,7 +120,8 @@ def _main(unused_argv):
 
   agents = []
   for i in range(PARALLEL):
-    agent = agent_cls()
+    agent = agent_cls(FLAGS.training, FLAGS.minimap_resolution, FLAGS.screen_resolution)
+    agent.build_model(i > 0, DEVICE[i % len(DEVICE)], FLAGS.net)
     agents.append(agent)
 
   config = tf.ConfigProto(allow_soft_placement=True)
@@ -128,6 +129,13 @@ def _main(unused_argv):
   sess = tf.Session(config=config)
 
   summary_writer = tf.summary.FileWriter(LOG)
+  for i in range(PARALLEL):
+    agents[i].setup(sess, summary_writer)
+
+  agent.initialize()
+  if not FLAGS.training or FLAGS.continuation:
+    global COUNTER
+    COUNTER = agent.load_model(SNAPSHOT)
 
   # Run threads
   threads = []
